@@ -172,11 +172,11 @@ static void tint(GBitmap *bmp, GColor color) {
   }
 }
 
-// Draws two digits right-aligned so the last one ends at `right`.
-static void draw_digit_pair(GContext *ctx, int a, int b, int right, int top, GColor color) {
+// Draws two digits left-aligned so the first one starts at `left`.
+static void draw_digit_pair(GContext *ctx, int a, int b, int left, int top, GColor color) {
   const int tracking = -3;
-  int xb = right - DIGIT_ADVANCE[b];
-  int xa = xb - (DIGIT_ADVANCE[a] + tracking);
+  int xa = left;
+  int xb = xa + DIGIT_ADVANCE[a] + tracking;
   int digits[2] = {a, b};
   int xs[2] = {xa, xb};
   for (int i = 0; i < 2; i++) {
@@ -331,10 +331,11 @@ static void canvas_update(Layer *layer, GContext *ctx) {
     hour %= 12;
     if (hour == 0) hour = 12;
   }
-  const int right = b.size.w - 3;
+  // Both rows start at the same x; the widest pair ("55") still ends at 193.
+  const int left = 64;
   const int top = 10, line = 98;
-  draw_digit_pair(ctx, hour / 10, hour % 10, right, top, GColorBlack);
-  draw_digit_pair(ctx, s_now.tm_min / 10, s_now.tm_min % 10, right, top + line, ACCENT);
+  draw_digit_pair(ctx, hour / 10, hour % 10, left, top, GColorBlack);
+  draw_digit_pair(ctx, s_now.tm_min / 10, s_now.tm_min % 10, left, top + line, ACCENT);
 
   draw_strip(ctx, b);
 }
