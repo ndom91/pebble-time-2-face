@@ -290,7 +290,8 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
     persist_write_data(P_WEATHER, &s_weather, sizeof(s_weather));
   }
 
-  static const uint32_t show_keys[COMP_COUNT] = {
+  // MESSAGE_KEY_* are linker symbols, not constants, so this array can't be static.
+  const uint32_t show_keys[COMP_COUNT] = {
     MESSAGE_KEY_SHOW_WEATHER, MESSAGE_KEY_SHOW_HEART_RATE,
     MESSAGE_KEY_SHOW_STEPS, MESSAGE_KEY_SHOW_BATTERY,
   };
