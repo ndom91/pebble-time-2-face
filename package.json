@@ -1,10 +1,8 @@
 {
   "name": "pebble-time-2-face",
   "author": "ndom91",
-  "version": "1.0.0",
-  "keywords": [
-    "pebble-app"
-  ],
+  "version": "1.0.1",
+  "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {
     "@rebble/clay": "^1.1.0"
@@ -14,9 +12,7 @@
     "uuid": "3a280993-baea-47db-bca5-16feabc70ffe",
     "sdkVersion": "3",
     "enableMultiJS": true,
-    "targetPlatforms": [
-      "emery"
-    ],
+    "targetPlatforms": ["emery"],
     "watchapp": {
       "watchface": true
     },
@@ -28,6 +24,7 @@
     "messageKeys": [
       "TEMP_X10",
       "CODE",
+      "UPDATED",
       "REQUEST",
       "SHOW_WEATHER",
       "SHOW_HEART_RATE",
@@ -49,6 +46,7 @@
         { "type": "bitmap", "name": "DIGIT_7", "file": "images/digit_7.png", "memoryFormat": "1BitPalette" },
         { "type": "bitmap", "name": "DIGIT_8", "file": "images/digit_8.png", "memoryFormat": "1BitPalette" },
         { "type": "bitmap", "name": "DIGIT_9", "file": "images/digit_9.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "HALFTONE", "file": "images/halftone.png", "memoryFormat": "1BitPalette" },
         { "type": "bitmap", "name": "RAIL_BOLD", "file": "images/rail_bold.png", "memoryFormat": "1BitPalette" },
         { "type": "bitmap", "name": "RAIL_REGULAR", "file": "images/rail_regular.png", "memoryFormat": "1BitPalette" }
       ]

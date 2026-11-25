@@ -20,6 +20,8 @@ DIGIT_WEIGHT = 900
 RAIL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./- "
 RAIL_SIZE = 8             # Silkscreen's native pixel size
 RAIL_TRACKING = 1
+HALFTONE_SIZE = (98, 180)
+HALFTONE_DOT, HALFTONE_PITCH = 2, 4
 
 
 def save_1bit(mask, path):
@@ -74,8 +76,20 @@ def gen_rail(font_file, name):
     return glyphs, cap_h
 
 
+def gen_halftone():
+    """One bitmap instead of ~1,100 fill_rect calls per redraw."""
+    w, h = HALFTONE_SIZE
+    img = Image.new("L", (w, h), 0)
+    d = ImageDraw.Draw(img)
+    for y in range(0, h, HALFTONE_PITCH):
+        for x in range(0, w, HALFTONE_PITCH):
+            d.rectangle([x, y, x + HALFTONE_DOT - 1, y + HALFTONE_DOT - 1], fill=255)
+    save_1bit(img, os.path.join(IMAGES, "halftone.png"))
+
+
 def main():
     os.makedirs(IMAGES, exist_ok=True)
+    gen_halftone()
     advances, digit_h, digit_baseline = gen_digits()
     bold, rail_w = gen_rail("Silkscreen-Bold.ttf", "bold")
     regular, _ = gen_rail("Silkscreen-Regular.ttf", "regular")
@@ -84,17 +98,17 @@ def main():
         "#pragma once",
         "#include <stdint.h>",
         "",
-        f"#define DIGIT_HEIGHT {digit_h}",
         f"#define DIGIT_BASELINE {digit_baseline}",
         "static const uint8_t DIGIT_ADVANCE[10] = {" + ", ".join(map(str, advances)) + "};",
         "",
         f"#define RAIL_GLYPH_WIDTH {rail_w}",
         f'#define RAIL_CHARS "{RAIL_CHARS}"',
+        f"#define RAIL_GLYPH_COUNT {len(RAIL_CHARS)}",
         "typedef struct { uint16_t y; uint8_t h; } RailGlyph;",
     ]
     for name, glyphs in (("BOLD", bold), ("REGULAR", regular)):
         body = ", ".join(f"{{{y}, {h}}}" for _, y, h in glyphs)
-        lines.append(f"static const RailGlyph RAIL_{name}[{len(glyphs)}] = {{{body}}};")
+        lines.append(f"static const RailGlyph RAIL_{name}[RAIL_GLYPH_COUNT] = {{{body}}};")
     with open(HEADER, "w") as f:
         f.write("\n".join(lines) + "\n")
     print("digits", advances, "height", digit_h)
