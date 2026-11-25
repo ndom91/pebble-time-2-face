@@ -2,8 +2,9 @@
 #pragma once
 #include <stdint.h>
 
-#define DIGIT_HEIGHT 106
-static const uint8_t DIGIT_ADVANCE[10] = {65, 35, 63, 65, 65, 66, 64, 62, 64, 64};
+#define DIGIT_HEIGHT 86
+#define DIGIT_BASELINE 85
+static const uint8_t DIGIT_ADVANCE[10] = {72, 72, 72, 72, 72, 72, 72, 72, 72, 72};
 
 #define RAIL_GLYPH_WIDTH 5
 #define RAIL_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789."

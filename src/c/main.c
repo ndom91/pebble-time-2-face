@@ -1,5 +1,5 @@
 // Poster — a Pebble Time 2 (emery, 200x228) watchface.
-// Big condensed digits over a halftone block, a vertical date rail and a
+// Staggered monospace digits over a halftone block, a vertical date rail and a
 // black status strip with weather, heart rate, steps and battery.
 #include <pebble.h>
 #include "assets.h"
@@ -172,13 +172,11 @@ static void tint(GBitmap *bmp, GColor color) {
   }
 }
 
-// Draws two digits left-aligned so the first one starts at `left`.
-static void draw_digit_pair(GContext *ctx, int a, int b, int left, int top, GColor color) {
-  const int tracking = -3;
-  int xa = left;
-  int xb = xa + DIGIT_ADVANCE[a] + tracking;
+// Draws two digits left-aligned from `left`, sitting on `baseline`.
+static void draw_digit_pair(GContext *ctx, int a, int b, int left, int baseline, GColor color) {
+  int top = baseline - DIGIT_BASELINE;
+  int xs[2] = {left, left + DIGIT_ADVANCE[a]};
   int digits[2] = {a, b};
-  int xs[2] = {xa, xb};
   for (int i = 0; i < 2; i++) {
     GBitmap *bmp = s_digits[digits[i]];
     tint(bmp, color);
@@ -331,11 +329,10 @@ static void canvas_update(Layer *layer, GContext *ctx) {
     hour %= 12;
     if (hour == 0) hour = 12;
   }
-  // Both rows start at the same x; the widest pair ("55") still ends at 193.
-  const int left = 64;
-  const int top = 10, line = 98;
-  draw_digit_pair(ctx, hour / 10, hour % 10, left, top, GColorBlack);
-  draw_digit_pair(ctx, s_now.tm_min / 10, s_now.tm_min % 10, left, top + line, ACCENT);
+  // Staggered rows: minutes sit lower and further right, and the hours are
+  // drawn over them where the two interlock.
+  draw_digit_pair(ctx, s_now.tm_min / 10, s_now.tm_min % 10, 52, 181, ACCENT);
+  draw_digit_pair(ctx, hour / 10, hour % 10, 38, 107, GColorBlack);
 
   draw_strip(ctx, b);
 }

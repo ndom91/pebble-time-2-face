@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-render the digit and vertical-rail bitmaps and their metrics header.
 
-The watch can't rotate text or hold 127 px glyphs in a font resource, so the
+The watch can't rotate text or hold 120 px glyphs in a font resource, so the
 big digits and the rotated date rail are drawn from 1-bit palettized PNGs.
 Run from the repo root:  python3 tools/gen_assets.py   (needs Pillow)
 """
@@ -14,7 +14,8 @@ FONTS = os.path.join(ROOT, "resources", "fonts")
 IMAGES = os.path.join(ROOT, "resources", "images")
 HEADER = os.path.join(ROOT, "src", "c", "assets.h")
 
-DIGIT_SIZE = 127          # px, matches the 254 px design at 2x
+DIGIT_FONT = "ChivoMono.ttf"
+DIGIT_SIZE = 120          # px, matches the 240 px design at 2x
 DIGIT_WEIGHT = 900
 RAIL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789."
 RAIL_SIZE = 8             # Silkscreen's native pixel size
@@ -30,7 +31,7 @@ def save_1bit(mask, path):
 
 
 def gen_digits():
-    font = ImageFont.truetype(os.path.join(FONTS, "BigShouldersDisplay.ttf"), DIGIT_SIZE)
+    font = ImageFont.truetype(os.path.join(FONTS, DIGIT_FONT), DIGIT_SIZE)
     font.set_variation_by_axes([DIGIT_WEIGHT])
     tops, bottoms = [], []
     for c in "0123456789":
@@ -46,7 +47,8 @@ def gen_digits():
         ImageDraw.Draw(img).text((0, -top), c, font=font, fill=255)
         save_1bit(img, os.path.join(IMAGES, f"digit_{c}.png"))
         advances.append(adv)
-    return advances, height, top
+    ascent, _ = font.getmetrics()
+    return advances, height, ascent - top  # baseline, measured from the image top
 
 
 def gen_rail(font_file, name):
@@ -74,7 +76,7 @@ def gen_rail(font_file, name):
 
 def main():
     os.makedirs(IMAGES, exist_ok=True)
-    advances, digit_h, _ = gen_digits()
+    advances, digit_h, digit_baseline = gen_digits()
     bold, rail_w = gen_rail("Silkscreen-Bold.ttf", "bold")
     regular, _ = gen_rail("Silkscreen-Regular.ttf", "regular")
     lines = [
@@ -83,6 +85,7 @@ def main():
         "#include <stdint.h>",
         "",
         f"#define DIGIT_HEIGHT {digit_h}",
+        f"#define DIGIT_BASELINE {digit_baseline}",
         "static const uint8_t DIGIT_ADVANCE[10] = {" + ", ".join(map(str, advances)) + "};",
         "",
         f"#define RAIL_GLYPH_WIDTH {rail_w}",
