@@ -450,7 +450,7 @@ static void canvas_update(Layer *layer, GContext *ctx) {
   // Staggered rows: minutes sit lower and further right, and the hours are
   // drawn over them where the two interlock.
   draw_digit_pair(ctx, s_now.tm_min / 10, s_now.tm_min % 10, 58, 170, ACCENT);
-  draw_digit_pair(ctx, hour / 10, hour % 10, 44, 104, GColorBlack);
+  draw_digit_pair(ctx, hour / 10, hour % 10, 44, 100, GColorBlack);
 
   if (strip_visible()) draw_strip(ctx, b);
 }
