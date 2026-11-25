@@ -1,11 +1,15 @@
-// Fetches current weather from Open-Meteo (no API key) and sends it to the
-// watch as TEMP (°C, rounded) and CODE (WMO weather code).
-var REFRESH_MS = 30 * 60 * 1000;
+// Settings page (Clay) and weather. Weather comes from Open-Meteo (no API
+// key) and goes to the watch as TEMP_X10 (°C × 10) and CODE (WMO weather
+// code); the watch converts to °F itself if that unit is chosen.
+var Clay = require('@rebble/clay');
+var clayConfig = require('./config');
+var clay = new Clay(clayConfig);
+
 var lastSent = 0;
 
-function send(temp, code) {
+function send(tempX10, code) {
   Pebble.sendAppMessage(
-    { TEMP: temp, CODE: code },
+    { TEMP_X10: tempX10, CODE: code },
     function () { lastSent = Date.now(); },
     function (e) { console.log('weather send failed: ' + JSON.stringify(e)); }
   );
@@ -22,7 +26,7 @@ function fetchWeather() {
       xhr.onload = function () {
         try {
           var cur = JSON.parse(xhr.responseText).current;
-          send(Math.round(cur.temperature_2m), cur.weather_code);
+          send(Math.round(cur.temperature_2m * 10), cur.weather_code);
         } catch (err) {
           console.log('weather parse failed: ' + err);
         }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-render the digit and vertical-rail bitmaps and their metrics header.
 
-The watch can't rotate text or hold 120 px glyphs in a font resource, so the
+The watch can't rotate text or hold 110 px glyphs in a font resource, so the
 big digits and the rotated date rail are drawn from 1-bit palettized PNGs.
 Run from the repo root:  python3 tools/gen_assets.py   (needs Pillow)
 """
@@ -15,9 +15,9 @@ IMAGES = os.path.join(ROOT, "resources", "images")
 HEADER = os.path.join(ROOT, "src", "c", "assets.h")
 
 DIGIT_FONT = "ChivoMono.ttf"
-DIGIT_SIZE = 120          # px, matches the 240 px design at 2x
+DIGIT_SIZE = 110          # px
 DIGIT_WEIGHT = 900
-RAIL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789."
+RAIL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./- "
 RAIL_SIZE = 8             # Silkscreen's native pixel size
 RAIL_TRACKING = 1
 

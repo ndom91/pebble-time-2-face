@@ -8,12 +8,31 @@
 #define STRIP_H 24
 #define WEATHER_REFRESH_MIN 30
 
-// Persist keys
-#define P_TEMP 1
+// Persist keys (1 held whole degrees in v1 and is no longer read)
 #define P_CODE 2
 #define P_WEATHER_TIME 3
+#define P_TEMP_X10 4
+#define P_SETTINGS 5
 
 #define TEMP_UNKNOWN INT32_MIN
+
+// Status strip complications, in display order.
+enum { COMP_WEATHER, COMP_HEART_RATE, COMP_STEPS, COMP_BATTERY, COMP_COUNT };
+
+typedef enum {
+  DATE_EU,          // 25.11.2026
+  DATE_US,          // 11/25/2026
+  DATE_ISO,         // 2026-11-25
+  DATE_DAY_MONTH,   // 25 NOV 2026
+  DATE_MONTH_DAY,   // NOV 25 2026
+  DATE_FORMAT_COUNT
+} DateFormat;
+
+typedef struct {
+  bool show[COMP_COUNT];
+  bool fahrenheit;
+  uint8_t date_format;
+} Settings;
 
 typedef enum { WX_NONE, WX_CLEAR, WX_CLOUD, WX_FOG, WX_RAIN, WX_SNOW, WX_STORM } WxKind;
 
@@ -23,8 +42,14 @@ static GBitmap *s_digits[10];
 static GBitmap *s_rail_bold, *s_rail_regular;
 static GFont s_font;
 
+static Settings s_settings = {
+  .show = {true, true, true, true},
+  .fahrenheit = false,
+  .date_format = DATE_EU,
+};
+
 static struct tm s_now;
-static int32_t s_temp = TEMP_UNKNOWN;
+static int32_t s_temp_x10 = TEMP_UNKNOWN;   // °C × 10
 static WxKind s_wx = WX_NONE;
 static uint8_t s_battery = 100;
 static bool s_charging;
@@ -147,18 +172,68 @@ static void request_weather(void) {
   app_message_outbox_send();
 }
 
+// Settings arrive from Clay as ints (toggles) or strings (selects).
+static int32_t tuple_int(const Tuple *t) {
+  switch (t->type) {
+    case TUPLE_CSTRING: {
+      const char *c = t->value->cstring;
+      int32_t v = 0;
+      bool neg = (*c == '-');
+      if (neg) c++;
+      while (*c >= '0' && *c <= '9') v = v * 10 + (*c++ - '0');
+      return neg ? -v : v;
+    }
+    case TUPLE_INT:
+      if (t->length == 1) return t->value->int8;
+      if (t->length == 2) return t->value->int16;
+      return t->value->int32;
+    case TUPLE_UINT:
+      if (t->length == 1) return t->value->uint8;
+      if (t->length == 2) return t->value->uint16;
+      return (int32_t)t->value->uint32;
+    default:
+      return 0;
+  }
+}
+
 static void inbox_received(DictionaryIterator *iter, void *context) {
-  Tuple *temp = dict_find(iter, MESSAGE_KEY_TEMP);
-  Tuple *code = dict_find(iter, MESSAGE_KEY_CODE);
-  if (temp) {
-    s_temp = temp->value->int32;
-    persist_write_int(P_TEMP, s_temp);
+  Tuple *t;
+  bool weather = false, settings = false;
+
+  if ((t = dict_find(iter, MESSAGE_KEY_TEMP_X10))) {
+    s_temp_x10 = tuple_int(t);
+    persist_write_int(P_TEMP_X10, s_temp_x10);
+    weather = true;
   }
-  if (code) {
-    s_wx = wx_from_wmo(code->value->int32);
-    persist_write_int(P_CODE, code->value->int32);
+  if ((t = dict_find(iter, MESSAGE_KEY_CODE))) {
+    s_wx = wx_from_wmo(tuple_int(t));
+    persist_write_int(P_CODE, tuple_int(t));
+    weather = true;
   }
-  persist_write_int(P_WEATHER_TIME, (int32_t)time(NULL));
+  if (weather) persist_write_int(P_WEATHER_TIME, (int32_t)time(NULL));
+
+  const uint32_t show_keys[COMP_COUNT] = {
+    MESSAGE_KEY_SHOW_WEATHER, MESSAGE_KEY_SHOW_HEART_RATE,
+    MESSAGE_KEY_SHOW_STEPS, MESSAGE_KEY_SHOW_BATTERY,
+  };
+  for (int i = 0; i < COMP_COUNT; i++) {
+    if ((t = dict_find(iter, show_keys[i]))) {
+      s_settings.show[i] = tuple_int(t) != 0;
+      settings = true;
+    }
+  }
+  if ((t = dict_find(iter, MESSAGE_KEY_TEMP_UNIT))) {
+    const char *unit = t->value->cstring;
+    s_settings.fahrenheit = (t->type == TUPLE_CSTRING) ? (*unit == 'F') : (tuple_int(t) != 0);
+    settings = true;
+  }
+  if ((t = dict_find(iter, MESSAGE_KEY_DATE_FORMAT))) {
+    int32_t f = tuple_int(t);
+    s_settings.date_format = (f >= 0 && f < DATE_FORMAT_COUNT) ? (uint8_t)f : DATE_EU;
+    settings = true;
+  }
+  if (settings) persist_write_data(P_SETTINGS, &s_settings, sizeof(s_settings));
+
   layer_mark_dirty(s_canvas);
 }
 
@@ -247,31 +322,46 @@ static void draw_strip(GContext *ctx, GRect bounds) {
   graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_rect(ctx, strip, 0, GCornerNone);
 
-  StripItem items[4];
+  StripItem items[COMP_COUNT];
   memset(items, 0, sizeof(items));
+  int n = 0;
 
-  wx_icon(s_wx, &items[0].icon, &items[0].icon_rows);
-  items[0].icon_color = GColorWhite;
-  if (s_temp == TEMP_UNKNOWN) snprintf(items[0].text, sizeof(items[0].text), "--");
-  else snprintf(items[0].text, sizeof(items[0].text), "%d°C", (int)s_temp);
-
-  items[1].icon = ICON_HEART;
-  items[1].icon_rows = ROWS(ICON_HEART);
-  items[1].icon_color = ACCENT;
-  if (s_bpm > 0) snprintf(items[1].text, sizeof(items[1].text), "%d", (int)s_bpm);
-  else snprintf(items[1].text, sizeof(items[1].text), "--");
-
-  items[2].icon = ICON_STEPS;
-  items[2].icon_rows = ROWS(ICON_STEPS);
-  items[2].icon_color = GColorWhite;
-  snprintf(items[2].text, sizeof(items[2].text), "%d", (int)s_steps);
-
-  items[3].battery = true;
-  snprintf(items[3].text, sizeof(items[3].text), "%d%%", s_battery);
+  if (s_settings.show[COMP_WEATHER]) {
+    StripItem *it = &items[n++];
+    wx_icon(s_wx, &it->icon, &it->icon_rows);
+    it->icon_color = GColorWhite;
+    if (s_temp_x10 == TEMP_UNKNOWN) {
+      snprintf(it->text, sizeof(it->text), "--");
+    } else {
+      int32_t t10 = s_settings.fahrenheit ? s_temp_x10 * 9 / 5 + 320 : s_temp_x10;
+      int deg = (int)((t10 >= 0 ? t10 + 5 : t10 - 5) / 10);
+      snprintf(it->text, sizeof(it->text), "%d°%c", deg, s_settings.fahrenheit ? 'F' : 'C');
+    }
+  }
+  if (s_settings.show[COMP_HEART_RATE]) {
+    StripItem *it = &items[n++];
+    it->icon = ICON_HEART;
+    it->icon_rows = ROWS(ICON_HEART);
+    it->icon_color = ACCENT;
+    if (s_bpm > 0) snprintf(it->text, sizeof(it->text), "%d", (int)s_bpm);
+    else snprintf(it->text, sizeof(it->text), "--");
+  }
+  if (s_settings.show[COMP_STEPS]) {
+    StripItem *it = &items[n++];
+    it->icon = ICON_STEPS;
+    it->icon_rows = ROWS(ICON_STEPS);
+    it->icon_color = GColorWhite;
+    snprintf(it->text, sizeof(it->text), "%d", (int)s_steps);
+  }
+  if (s_settings.show[COMP_BATTERY]) {
+    StripItem *it = &items[n++];
+    it->battery = true;
+    snprintf(it->text, sizeof(it->text), "%d%%", s_battery);
+  }
 
   const int pad = 6, gap = 3, text_h = 12;
   int total = 0;
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < n; i++) {
     GSize ts = graphics_text_layout_get_content_size(items[i].text, s_font,
                                                      GRect(0, 0, 100, text_h),
                                                      GTextOverflowModeFill, GTextAlignmentLeft);
@@ -279,13 +369,21 @@ static void draw_strip(GContext *ctx, GRect bounds) {
     items[i].width = iw + gap + ts.w;
     total += items[i].width;
   }
-  int space = (strip.size.w - 2 * pad - total) / 3;
-  if (space < 2) space = 2;
 
-  int x = pad;
+  // Spread items edge to edge; a single item is centred.
+  int x, space;
+  if (n == 1) {
+    x = (strip.size.w - total) / 2;
+    space = 0;
+  } else {
+    x = pad;
+    space = (strip.size.w - 2 * pad - total) / (n - 1);
+    if (space < 2) space = 2;
+  }
+
   int mid = strip.origin.y + STRIP_H / 2;
   graphics_context_set_text_color(ctx, GColorWhite);
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < n; i++) {
     int iw;
     if (items[i].battery) {
       iw = 13;
@@ -303,6 +401,26 @@ static void draw_strip(GContext *ctx, GRect bounds) {
   }
 }
 
+static bool strip_visible(void) {
+  for (int i = 0; i < COMP_COUNT; i++) {
+    if (s_settings.show[i]) return true;
+  }
+  return false;
+}
+
+static void format_date(char *buf, size_t size, const struct tm *t) {
+  static const char *const formats[DATE_FORMAT_COUNT] = {
+    [DATE_EU] = "%d.%m.%Y",
+    [DATE_US] = "%m/%d/%Y",
+    [DATE_ISO] = "%Y-%m-%d",
+    [DATE_DAY_MONTH] = "%d %b %Y",
+    [DATE_MONTH_DAY] = "%b %d %Y",
+  };
+  uint8_t f = s_settings.date_format < DATE_FORMAT_COUNT ? s_settings.date_format : DATE_EU;
+  strftime(buf, size, formats[f], t);
+  for (char *c = buf; *c; c++) if (*c >= 'a' && *c <= 'z') *c -= 32;
+}
+
 static void canvas_update(Layer *layer, GContext *ctx) {
   GRect b = layer_get_bounds(layer);
   graphics_context_set_compositing_mode(ctx, GCompOpSet);
@@ -313,10 +431,10 @@ static void canvas_update(Layer *layer, GContext *ctx) {
   draw_halftone(ctx, GRect(26, 12, 98, 180));
 
   // Date rail: weekday from the top, full date to the bottom.
-  char day[12], date[12];
+  char day[12], date[16];
   strftime(day, sizeof(day), "%A", &s_now);
   for (char *c = day; *c; c++) if (*c >= 'a' && *c <= 'z') *c -= 32;
-  strftime(date, sizeof(date), "%d.%m.%Y", &s_now);
+  format_date(date, sizeof(date), &s_now);
   int rail_x = 10;
   draw_rail(ctx, day, s_rail_bold, RAIL_BOLD, GPoint(rail_x, 8));
   int date_len = rail_length(date, RAIL_REGULAR);
@@ -331,10 +449,10 @@ static void canvas_update(Layer *layer, GContext *ctx) {
   }
   // Staggered rows: minutes sit lower and further right, and the hours are
   // drawn over them where the two interlock.
-  draw_digit_pair(ctx, s_now.tm_min / 10, s_now.tm_min % 10, 52, 181, ACCENT);
-  draw_digit_pair(ctx, hour / 10, hour % 10, 38, 107, GColorBlack);
+  draw_digit_pair(ctx, s_now.tm_min / 10, s_now.tm_min % 10, 58, 170, ACCENT);
+  draw_digit_pair(ctx, hour / 10, hour % 10, 44, 104, GColorBlack);
 
-  draw_strip(ctx, b);
+  if (strip_visible()) draw_strip(ctx, b);
 }
 
 // ---- services ------------------------------------------------------------
@@ -392,7 +510,10 @@ static void init(void) {
   s_rail_regular = gbitmap_create_with_resource(RESOURCE_ID_RAIL_REGULAR);
   s_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SILKSCREEN_BOLD_8));
 
-  if (persist_exists(P_TEMP)) s_temp = persist_read_int(P_TEMP);
+  if (persist_exists(P_SETTINGS)) {
+    persist_read_data(P_SETTINGS, &s_settings, sizeof(s_settings));
+  }
+  if (persist_exists(P_TEMP_X10)) s_temp_x10 = persist_read_int(P_TEMP_X10);
   if (persist_exists(P_CODE)) s_wx = wx_from_wmo(persist_read_int(P_CODE));
 
   time_t t = time(NULL);
@@ -417,7 +538,7 @@ static void init(void) {
 #endif
 
   app_message_register_inbox_received(inbox_received);
-  app_message_open(64, 64);
+  app_message_open(256, 64);
 }
 
 static void deinit(void) {

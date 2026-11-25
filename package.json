@@ -2,20 +2,40 @@
   "name": "pebble-time-2-face",
   "author": "ndom91",
   "version": "1.0.0",
-  "keywords": ["pebble-app"],
+  "keywords": [
+    "pebble-app"
+  ],
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "@rebble/clay": "^1.1.0"
+  },
   "pebble": {
     "displayName": "Poster",
     "uuid": "3a280993-baea-47db-bca5-16feabc70ffe",
     "sdkVersion": "3",
     "enableMultiJS": true,
-    "targetPlatforms": ["emery"],
+    "targetPlatforms": [
+      "emery"
+    ],
     "watchapp": {
       "watchface": true
     },
-    "capabilities": ["location", "health"],
-    "messageKeys": ["TEMP", "CODE", "REQUEST"],
+    "capabilities": [
+      "location",
+      "health",
+      "configurable"
+    ],
+    "messageKeys": [
+      "TEMP_X10",
+      "CODE",
+      "REQUEST",
+      "SHOW_WEATHER",
+      "SHOW_HEART_RATE",
+      "SHOW_STEPS",
+      "SHOW_BATTERY",
+      "TEMP_UNIT",
+      "DATE_FORMAT"
+    ],
     "resources": {
       "media": [
         { "type": "font", "name": "FONT_SILKSCREEN_BOLD_8", "file": "fonts/Silkscreen-Bold.ttf" },
