@@ -1,0 +1,37 @@
+{
+  "name": "pebble-time-2-face",
+  "author": "ndom91",
+  "version": "1.0.0",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Poster",
+    "uuid": "3a280993-baea-47db-bca5-16feabc70ffe",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": ["emery"],
+    "watchapp": {
+      "watchface": true
+    },
+    "capabilities": ["location", "health"],
+    "messageKeys": ["TEMP", "CODE", "REQUEST"],
+    "resources": {
+      "media": [
+        { "type": "font", "name": "FONT_SILKSCREEN_BOLD_8", "file": "fonts/Silkscreen-Bold.ttf" },
+        { "type": "bitmap", "name": "DIGIT_0", "file": "images/digit_0.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "DIGIT_1", "file": "images/digit_1.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "DIGIT_2", "file": "images/digit_2.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "DIGIT_3", "file": "images/digit_3.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "DIGIT_4", "file": "images/digit_4.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "DIGIT_5", "file": "images/digit_5.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "DIGIT_6", "file": "images/digit_6.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "DIGIT_7", "file": "images/digit_7.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "DIGIT_8", "file": "images/digit_8.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "DIGIT_9", "file": "images/digit_9.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "RAIL_BOLD", "file": "images/rail_bold.png", "memoryFormat": "1BitPalette" },
+        { "type": "bitmap", "name": "RAIL_REGULAR", "file": "images/rail_regular.png", "memoryFormat": "1BitPalette" }
+      ]
+    }
+  }
+}
