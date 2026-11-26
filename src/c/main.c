@@ -8,9 +8,9 @@
 
 #define ACCENT GColorOrange          // #FF5500
 #define HOURS_X 44
-#define HOURS_BASELINE 100
+#define HOURS_BASELINE 94
 #define MINUTES_X 58
-#define MINUTES_BASELINE 170
+#define MINUTES_BASELINE 175
 #define HALFTONE_ORIGIN GPoint(26, 12)
 #define RAIL_X 10
 #define RAIL_TOP 8
@@ -501,8 +501,7 @@ static void canvas_update(Layer *layer, GContext *ctx) {
   int date_top = b.size.h - STRIP_H - RAIL_BOTTOM_GAP - rail_length(date, RAIL_REGULAR);
   draw_rail(ctx, date, 1, RAIL_REGULAR, GPoint(RAIL_X, date_top));
 
-  // Staggered rows: minutes sit lower and further right, and the hours are
-  // drawn over them where the two interlock.
+  // Staggered rows: minutes sit lower and further right, with a small gap.
   int hour = s_now.tm_hour;
   if (!clock_is_24h_style()) {
     hour %= 12;
