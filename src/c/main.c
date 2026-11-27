@@ -11,6 +11,9 @@
 #define HOURS_BASELINE 94
 #define MINUTES_X 58
 #define MINUTES_BASELINE 175
+// Original layout: the rows interlock and the hours are drawn over the minutes.
+#define HOURS_BASELINE_OVERLAP 100
+#define MINUTES_BASELINE_OVERLAP 170
 #define HALFTONE_ORIGIN GPoint(26, 12)
 #define RAIL_X 10
 #define RAIL_TOP 8
@@ -59,6 +62,7 @@ typedef struct {
   bool fahrenheit;
   uint8_t date_format;
   uint8_t hourly_vibe;
+  bool overlap_digits;
 } Settings;
 
 #define TEMP_UNKNOWN INT32_MIN
@@ -74,6 +78,7 @@ static Settings s_settings = {
   .fahrenheit = false,
   .date_format = DATE_EU,
   .hourly_vibe = VIBE_OFF,
+  .overlap_digits = false,
 };
 static Weather s_weather = {.temp_x10 = TEMP_UNKNOWN, .code = -1, .updated = 0};
 static time_t s_last_request;
@@ -334,6 +339,10 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
     s_settings.hourly_vibe = (v >= 0 && v < VIBE_COUNT) ? (uint8_t)v : VIBE_OFF;
     settings = true;
   }
+  if ((t = dict_find(iter, MESSAGE_KEY_OVERLAP_DIGITS))) {
+    s_settings.overlap_digits = tuple_int(t) != 0;
+    settings = true;
+  }
   if (settings) {
     persist_write_data(P_SETTINGS, &s_settings, sizeof(s_settings));
     update_health_subscription();
@@ -519,14 +528,18 @@ static void canvas_update(Layer *layer, GContext *ctx) {
   int date_top = b.size.h - STRIP_H - RAIL_BOTTOM_GAP - rail_length(date, RAIL_REGULAR);
   draw_rail(ctx, date, 1, RAIL_REGULAR, GPoint(RAIL_X, date_top));
 
-  // Staggered rows: minutes sit lower and further right, with a small gap.
+  // Staggered rows: minutes sit lower and further right. They either keep a
+  // small gap or interlock, with the hours drawn over the minutes.
   int hour = s_now.tm_hour;
   if (!clock_is_24h_style()) {
     hour %= 12;
     if (hour == 0) hour = 12;
   }
-  draw_digit_pair(ctx, s_now.tm_min, MINUTES_X, MINUTES_BASELINE, ACCENT);
-  draw_digit_pair(ctx, hour, HOURS_X, HOURS_BASELINE, GColorBlack);
+  bool overlap = s_settings.overlap_digits;
+  draw_digit_pair(ctx, s_now.tm_min, MINUTES_X,
+                  overlap ? MINUTES_BASELINE_OVERLAP : MINUTES_BASELINE, ACCENT);
+  draw_digit_pair(ctx, hour, HOURS_X,
+                  overlap ? HOURS_BASELINE_OVERLAP : HOURS_BASELINE, GColorBlack);
 
   draw_strip(ctx, b);
 }

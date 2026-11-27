@@ -18,6 +18,14 @@ module.exports = [
   {
     type: 'section',
     items: [
+      { type: 'heading', defaultValue: 'Time' },
+      { type: 'toggle', messageKey: 'OVERLAP_DIGITS', label: 'Overlap hours and minutes', defaultValue: false },
+      { type: 'text', defaultValue: 'Interlocks the two rows, with the hours drawn over the minutes.' }
+    ]
+  },
+  {
+    type: 'section',
+    items: [
       { type: 'heading', defaultValue: 'Weather' },
       {
         type: 'radiogroup',

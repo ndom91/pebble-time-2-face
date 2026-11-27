@@ -2,7 +2,7 @@
 
 ![Screenshot](./.github/assets/header001.png)
 
-Staggered, interlocking monospace digits over a halftone block, a vertical date rail and a black status strip with weather, heart rate, steps and battery. Built for the Pebble Time 2 (`emery`, 200×228, 64 colours).
+Staggered monospace digits, optionally interlocking, over a halftone block, a vertical date rail and a black status strip with weather, heart rate, steps and battery. Built for the Pebble Time 2 (`emery`, 200×228, 64 colours).
 
 ## Install
 
@@ -41,6 +41,8 @@ Open the watchface's settings in the Pebble app to choose:
 - which of weather, heart rate, steps and battery show in the strip (it hides when all are off; one item is centred)
 - °C or °F for the temperature
 - the vertical date format: `25.11.2026` (DE/EU), `11/25/2026` (US), `2026-11-25` (ISO), `25 NOV 2026` or `NOV 25 2026`
+- whether the hours and minutes overlap, with the hours drawn over the minutes (off by default)
+- an hourly vibration: off, single short, double tap, long or heartbeat (silent during Quiet Time)
 
 The page is built with [Clay](https://github.com/pebble-dev/clay) (`src/pkjs/config.js`); `pebble build` installs it from npm.
 

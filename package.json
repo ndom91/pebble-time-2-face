@@ -1,7 +1,7 @@
 {
   "name": "pebble-time-2-face",
   "author": "ndom91",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {
@@ -32,7 +32,8 @@
       "SHOW_BATTERY",
       "TEMP_UNIT",
       "DATE_FORMAT",
-      "HOURLY_VIBE"
+      "HOURLY_VIBE",
+      "OVERLAP_DIGITS"
     ],
     "resources": {
       "media": [
