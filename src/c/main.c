@@ -43,10 +43,22 @@ typedef enum {
   DATE_FORMAT_COUNT
 } DateFormat;
 
+typedef enum {
+  VIBE_OFF,
+  VIBE_SHORT,
+  VIBE_DOUBLE,
+  VIBE_LONG,
+  VIBE_HEARTBEAT,
+  VIBE_COUNT
+} HourlyVibe;
+
+// New fields go at the end: settings saved by an older build are shorter,
+// and persist_read_data leaves the missing tail at its default.
 typedef struct {
   bool show[COMP_COUNT];
   bool fahrenheit;
   uint8_t date_format;
+  uint8_t hourly_vibe;
 } Settings;
 
 #define TEMP_UNKNOWN INT32_MIN
@@ -61,6 +73,7 @@ static Settings s_settings = {
   .show = {true, true, true, true},
   .fahrenheit = false,
   .date_format = DATE_EU,
+  .hourly_vibe = VIBE_OFF,
 };
 static Weather s_weather = {.temp_x10 = TEMP_UNKNOWN, .code = -1, .updated = 0};
 static time_t s_last_request;
@@ -316,6 +329,11 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
     s_settings.date_format = (f >= 0 && f < DATE_FORMAT_COUNT) ? (uint8_t)f : DATE_EU;
     settings = true;
   }
+  if ((t = dict_find(iter, MESSAGE_KEY_HOURLY_VIBE))) {
+    int32_t v = tuple_int(t);
+    s_settings.hourly_vibe = (v >= 0 && v < VIBE_COUNT) ? (uint8_t)v : VIBE_OFF;
+    settings = true;
+  }
   if (settings) {
     persist_write_data(P_SETTINGS, &s_settings, sizeof(s_settings));
     update_health_subscription();
@@ -522,8 +540,26 @@ static void battery_handler(BatteryChargeState state) {
   if (s_settings.show[COMP_BATTERY]) layer_mark_dirty(s_canvas);
 }
 
+static void play_hourly_vibe(void) {
+  if (quiet_time_is_active()) return;
+  static const uint32_t double_tap[] = {80, 120, 80};
+  static const uint32_t heartbeat[] = {60, 100, 120};
+  switch (s_settings.hourly_vibe) {
+    case VIBE_SHORT: vibes_short_pulse(); break;
+    case VIBE_LONG: vibes_long_pulse(); break;
+    case VIBE_DOUBLE:
+      vibes_enqueue_custom_pattern((VibePattern){.durations = double_tap, .num_segments = 3});
+      break;
+    case VIBE_HEARTBEAT:
+      vibes_enqueue_custom_pattern((VibePattern){.durations = heartbeat, .num_segments = 3});
+      break;
+    default: break;
+  }
+}
+
 static void tick_handler(struct tm *tick_time, TimeUnits changed) {
   s_now = *tick_time;
+  if (changed & HOUR_UNIT) play_hourly_vibe();
   maybe_request_weather(time(NULL));
   layer_mark_dirty(s_canvas);
 }

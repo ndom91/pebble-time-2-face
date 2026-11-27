@@ -51,6 +51,26 @@ module.exports = [
     ]
   },
   {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Hourly vibration' },
+      {
+        type: 'select',
+        messageKey: 'HOURLY_VIBE',
+        label: 'Pattern',
+        defaultValue: '0',
+        options: [
+          { label: 'Off', value: '0' },
+          { label: 'Single short', value: '1' },
+          { label: 'Double tap', value: '2' },
+          { label: 'Long', value: '3' },
+          { label: 'Heartbeat', value: '4' }
+        ]
+      },
+      { type: 'text', defaultValue: 'Stays silent during Quiet Time.' }
+    ]
+  },
+  {
     type: 'submit',
     defaultValue: 'Save'
   }
