@@ -11,9 +11,9 @@
 #define HOURS_BASELINE 94
 #define MINUTES_X 58
 #define MINUTES_BASELINE 175
-// Original layout: the rows interlock and the hours are drawn over the minutes.
-#define HOURS_BASELINE_OVERLAP 100
-#define MINUTES_BASELINE_OVERLAP 170
+// Overlap setting: the rows interlock and the hours are drawn over the minutes.
+#define HOURS_BASELINE_OVERLAP 108
+#define MINUTES_BASELINE_OVERLAP 158
 #define HALFTONE_ORIGIN GPoint(26, 12)
 #define RAIL_X 10
 #define RAIL_TOP 8
